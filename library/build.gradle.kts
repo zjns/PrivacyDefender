@@ -5,6 +5,7 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     signing
+    id("org.jetbrains.dokka") version "1.7.20"
 }
 
 group = "io.github.zjns"
@@ -13,6 +14,12 @@ version = "0.2.1"
 
 val mavenCentralUsername: String? by rootProject
 val mavenCentralPassword: String? by rootProject
+
+val javadocJar = task<Jar>("javadocJar") {
+    dependsOn(tasks.dokkaHtml)
+    archiveClassifier.set("javadoc")
+    from(buildDir.resolve("dokka/html"))
+}
 
 gradlePlugin {
     plugins {
@@ -23,6 +30,10 @@ gradlePlugin {
     }
 }
 
+signing {
+    useGpgCmd()
+}
+
 publishing {
     publications {
         create<MavenPublication>("privacyDefenderPlugin") {
@@ -30,7 +41,8 @@ publishing {
             artifactId = project.archivesName.get()
             version = project.version.toString()
             from(components.getByName("kotlin"))
-            artifact(tasks.getByName("kotlinSourcesJar"))
+            artifact(tasks.kotlinSourcesJar)
+            artifact(javadocJar)
             pom {
                 packaging = "jar"
                 name.set("Privacy Defender")
@@ -65,6 +77,7 @@ publishing {
                     url.set("https://github.com/zjns/PrivacyDefender/actions")
                 }
             }
+            the<SigningExtension>().sign(this)
         }
     }
 
